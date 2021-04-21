@@ -8,6 +8,6 @@ class EntityPlayer:
 
 class Score:
     line5 = 1e7
-    line4 = 1e5
-    line3 = 1e3
+    line4 = 1e6 + (1e5 * 2)
+    line3 = 1e5
     line2 = 1e1

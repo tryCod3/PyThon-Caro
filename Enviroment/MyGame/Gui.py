@@ -16,7 +16,7 @@ class GuiInterface:
     memory = []
     sizeRow = 13
     sizeCol = 13
-    checked = None
+    checked = np.zeros((sizeRow, sizeCol))
 
     def setCondition(self, condition):
         self.event.setCondition(condition)
@@ -41,7 +41,6 @@ class GuiInterface:
         self.undo.place(x=x, y=y)
 
     def drawBox(self):
-        self.checked = np.zeros((self.sizeRow, self.sizeCol))
         self.root = tk.Tk()
         self.window = tk.Frame(self.root, width=640, height=640, background="bisque")
         self.window.place(x=0, y=0)
@@ -98,8 +97,7 @@ class GuiInterface:
         if messagebox.askokcancel("Quit", "Do you want to quit?"):
             self.root.destroy()
 
-    def carotimeout(self):
-        self.root.after(2000)
+
 
     def showTableCaro(self):
         self.drawChessBoard()

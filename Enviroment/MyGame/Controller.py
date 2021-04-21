@@ -43,6 +43,7 @@ class Event(threading.Thread):
                 self.off(guiI)
                 self.light(guiI)
 
+
     def clickedReset(self, guiI):
         if self.condition.isSet() == False:
             while len(guiI.memory) > 0:

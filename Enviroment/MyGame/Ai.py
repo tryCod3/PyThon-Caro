@@ -78,14 +78,13 @@ class Move:
         for i in range(sz):
             x = list[i].x
             y = list[i].y
-            # self.guiI.setArrButton(x, y, id)
             self.guiI.checked[x][y] = id
             self.guiI.memory.append([x, y])
             att = self.heu.think(id, self.guiI)
             listResurt.append(Resurt(x, y, att))
-            # self.guiI.setArrButton(x, y, "")
             self.guiI.checked[x][y] = 0
             self.guiI.memory.pop()
+            if att > pl.Score.line5: break
         if len(listResurt) > 0:
             listResurt.sort(key=lambda x: x.score, reverse=True)
         return listResurt
@@ -103,10 +102,11 @@ class Move:
                 mx = listAi[0].score
             else:
                 mx = max(listAi[0].score, listUser[0].score)
+                print("mx = ", mx)
             if st.inRanger(0, pl.Score.line3 - 1, mx):
                 return 2
-            elif st.inRanger(pl.Score.line3 + 1, pl.Score.line4 - 1, mx):
-                return 3
+            elif st.inRanger(pl.Score.line3, pl.Score.line4, mx):
+                return 2
             else:
                 return 1
         else:
@@ -127,7 +127,7 @@ class Move:
             if isAi == pl.EntityPlayer.ai:
                 isWinAi *= 2
             else:
-                isWinUser *= 4
+                isWinUser *= 2
             value = isWinAi - isWinUser
             if value > 0:
                 value += depth
@@ -135,19 +135,7 @@ class Move:
                 value -= depth
             return Resurt(0, 0, value)
 
-        sortList1 = self.sortList(list, pl.EntityPlayer.ai)
-        sortList2 = self.sortList(list, pl.EntityPlayer.user)
-
-        if len(sortList1) > 0 and len(sortList2) > 0:
-            if sortList1[0].score >= sortList2[0].score:
-                sortList = sortList1
-            else:
-                sortList = sortList2
-        else:
-            if len(sortList1) > 0:
-                sortList = sortList1
-            else:
-                sortList = sortList2
+        sortList = self.sortList(list, pl.EntityPlayer.ai)
 
         if isAi == pl.EntityPlayer.ai:
             bestMove = Resurt(0, 0, self.min_int)
