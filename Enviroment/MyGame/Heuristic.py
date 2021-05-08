@@ -1,15 +1,17 @@
 import Point as point
 import Gui
+import Player as pl
 
 arrAttack = [
     [0, 0],
     [1, 0],
-    [200, 100],
-    [20000, 200],
-    [100000, 200],
-    [10000000, 10000000]
+    [10, 30],
+    [1000, 300],
+    [100000, 100000],
+    [20000000, 20000000]
 ]
 
+arrDefen = [0, 1, 20, 30, 40, 50]
 
 
 class Experience:
@@ -17,13 +19,121 @@ class Experience:
     def think(self, id, guiI):
         sum = 0
         sz = len(guiI.memory)
-        for i in range(sz):
-            x = guiI.memory[i][0]
-            y = guiI.memory[i][1]
-            if guiI.checked[x][y] == id:
-                newPoint = point.Point(x, y)
-                sum += self.attack(newPoint, id, guiI)
+        if sz > 0:
+            for i in range(sz):
+                x = guiI.memory[i][0]
+                y = guiI.memory[i][1]
+                if guiI.checked[x][y] == id:
+                    newPoint = point.Point(x, y)
+                    sum += self.attack(newPoint, id, guiI)
+
         return sum
+
+    def getDefen(self, point, id, guiI):
+        defen = self.defen(point, id, guiI)
+        mx = defen - 6
+        if defen <= 5:
+            return arrDefen[defen]
+        else:
+            return arrDefen[5] + mx
+
+    def defen(self, point, id, guiI):
+        x = point.x
+        y = point.y
+
+        # ngang
+        i, j = x, y
+        diff_ngang = 0
+        time = 4
+        while time > 4 and j >= 0:
+            if guiI.isDifferent(x, j):
+                diff_ngang += 1
+            if j - 1 < 0 or guiI.checked[x][j] == id:
+                break
+            j -= 1
+            time -= 1
+
+        time = 4
+        i, j = x, y
+        while time > 4 and j < guiI.sizeCol:
+            if guiI.isDifferent(x, j):
+                diff_ngang += 1
+            if j + 1 >= guiI.sizeCol or guiI.checked[x][j] == id:
+                break
+            j += 1
+            time -= 1
+
+        # doc
+        i, j = x, y
+        diff_doc = 0
+        time = 4
+        while time > 0 and i >= 0:
+            if guiI.isDifferent(i, y, id):
+                diff_doc += 1
+            if i - 1 < 0 or guiI.checked[i][y] == id:
+                break
+            i -= 1
+            time -= 1
+
+        i, j = x, y
+        time = 4
+        while time > 0 and i < guiI.sizeRow:
+            if guiI.isDifferent(i, y, id):
+                diff_doc += 1
+            if i + 1 >= guiI.sizeRow or guiI.checked[i][y] == id:
+                break
+            i += 1
+            time -= 1
+
+        # dcc
+        i, j = x, y
+        diff_dcc = 0
+        time = 4
+        while time > 0 and i >= 0 and j >= 0:
+            if guiI.isDifferent(i, j, id):
+                diff_dcc += 1
+            if i - 1 < 0 or j - 1 < 0 or guiI.checked[i][j] == id:
+                break
+            i -= 1
+            j -= 1
+            time -= 1
+
+        i, j = x, y
+        time = 4
+        while time > 0 and i < guiI.sizeRow and j < guiI.sizeCol:
+            if guiI.isDifferent(i, j, id):
+                diff_dcc += 1
+            if i + 1 >= guiI.sizeRow or j + 1 >= guiI.sizeCol or guiI.checked[i][j] == id:
+                break
+            i += 1
+            j += 1
+            time -= 1
+
+        # dcp
+        i, j = x, y
+        diff_dcp = 0
+        time = 4
+        while time > 0 and i >= 0 and j < guiI.sizeCol:
+            if guiI.isDifferent(i, j, id):
+                diff_dcp += 1
+            if i - 1 < 0 or j + 1 >= guiI.sizeCol or guiI.checked[i][j] == id:
+                break
+            i -= 1
+            j += 1
+            time -= 1
+
+        i, j = x, y
+        time = 4
+        while time > 0 and i < guiI.sizeRow and j >= 0:
+            if guiI.isDifferent(i, j, id):
+                diff_dcp += 1
+            if i + 1 >= guiI.sizeRow or j - 1 < 0 or guiI.checked[i][j] == id:
+                break
+            i += 1
+            j -= 1
+            time -= 1
+
+        return diff_ngang + diff_doc + diff_dcp + diff_dcc
 
     def attack(self, point, id, guiI):
         listHorizal = self.getHorizal(point, id, guiI)

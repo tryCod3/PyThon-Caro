@@ -21,6 +21,9 @@ class GuiInterface:
     def setCondition(self, condition):
         self.event.setCondition(condition)
 
+    def setCondition_Choise(self, condition_choise):
+        self.event.setCondition_Choise(condition_choise)
+
     def setGuiI(self, guiI):
         self.guiI = guiI
 
@@ -40,6 +43,20 @@ class GuiInterface:
                               )
         self.undo.place(x=x, y=y)
 
+    def drawAutoAi(self, x, y):
+        self.undo = tk.Button(self.window, text="AI VS AI", font=('arial', 15, 'bold'), relief="raised", bg='gray',
+                              foreground="white",
+                              command=partial(self.event.AivsAi, guiI=self.guiI)
+                              )
+        self.undo.place(x=x, y=y)
+
+    def drawPlayAi(self, x, y):
+        self.undo = tk.Button(self.window, text="AI VS USER", font=('arial', 15, 'bold'), relief="raised", bg='gray',
+                              foreground="white",
+                              command=partial(self.event.AivsUser, guiI=self.guiI)
+                              )
+        self.undo.place(x=x, y=y)
+
     def drawBox(self):
         self.root = tk.Tk()
         self.window = tk.Frame(self.root, width=640, height=640, background="bisque")
@@ -48,7 +65,7 @@ class GuiInterface:
         self.root.title("Welcome to Caro")
         self.root.geometry("640x600")
         self.root.eval('tk::PlaceWindow . center')
-        self.root.resizable(0, 0)
+        # self.root.resizable(0, 0)
 
     def drawContourLines(self):
         self.place_y = 30
@@ -71,6 +88,8 @@ class GuiInterface:
         self.drawContourLines()
         self.drawReset(self.place_x * (self.sizeCol + 4), self.place_y)
         self.drawUndo(self.place_x * (self.sizeCol + 4), self.place_y + 42)
+        self.drawAutoAi(self.place_x * (self.sizeCol + 4), self.place_y + 84)
+        self.drawPlayAi(self.place_x * (self.sizeCol + 4), self.place_y + 126)
 
     def changeColor(self):
         sz = len(self.memory)
@@ -96,8 +115,6 @@ class GuiInterface:
     def on_closing(self):
         if messagebox.askokcancel("Quit", "Do you want to quit?"):
             self.root.destroy()
-
-
 
     def showTableCaro(self):
         self.drawChessBoard()

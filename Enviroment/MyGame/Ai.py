@@ -1,5 +1,6 @@
 import sys
 import threading
+import time
 
 import State as st
 import Heuristic
@@ -20,34 +21,74 @@ class Resurt:
 
 class Play(threading.Thread):
 
-    def __init__(self, condition, guiI, event):
+    def __init__(self, condition, condition_choise, guiI, event):
         threading.Thread.__init__(self)
         self.condition = condition
+        self.condition_choise = condition_choise
         self.guiI = guiI
         self.event = event
 
-    def run(self):
-        move = Move(self.guiI)
+    def movePoint(self, move, id):
+        if id == pl.EntityPlayer.ai:
+            c = 'O'
+        else:
+            c = 'X'
+        point = move.bestMove()
+        x = point.get_x()
+        y = point.get_y()
+        self.guiI.setArrButton(x, y, c)
+        self.guiI.memory.append([x, y])
+        self.guiI.checked[x][y] = id
+        self.guiI.changeColor()
 
-        while True:
-            try:
-                if st.whoNext(self.guiI) == pl.EntityPlayer.ai and pl.EntityPlayer.win == pl.EntityPlayer.noOneHasLost:
-                    point = move.bestMove()
-                    x = point.get_x()
-                    y = point.get_y()
-                    self.guiI.setArrButton(x, y, 'O')
-                    self.guiI.memory.append([x, y])
-                    self.guiI.checked[x][y] = 1
-                    self.guiI.changeColor()
-                    if st.hasWin(pl.EntityPlayer.ai, self.guiI):
-                        pl.EntityPlayer.win = True
-                        self.event.notification("Winner for ", 'O')
-                    print("watting player move...")
+    def vsUser(self):
+        move = Move(self.guiI)
+        try:
+            while pl.EntityPlayer.realNext == pl.EntityPlayer.ai and pl.EntityPlayer.win == pl.EntityPlayer.noOneHasLost:
+                self.movePoint(move, pl.EntityPlayer.ai)
+                pl.EntityPlayer.realNext = pl.EntityPlayer.user
+                if st.hasWin(pl.EntityPlayer.ai, self.guiI):
+                    pl.EntityPlayer.win = True
+                    self.event.notification("Winner for ", 'O')
+                print("watting player move...")
                 self.condition.clear()
                 self.condition.wait()
+        except:
+            print("error at class Ai in method run")
+            raise
+
+    def vsAi(self):
+        print("ai")
+        move = Move(self.guiI)
+        while pl.EntityPlayer.win == False:
+            try:
+                time.sleep(0.5)
+                print("ai move")
+                self.movePoint(move, pl.EntityPlayer.ai)
+                if st.hasWin(pl.EntityPlayer.ai, self.guiI):
+                    self.event.notification("Winner for ", 'O')
+                    break
+                time.sleep(0.5)
+                print("watting player move...")
+                self.movePoint(move, pl.EntityPlayer.user)
+                if st.hasWin(pl.EntityPlayer.user, self.guiI):
+                    self.event.notification("Winner for ", 'X')
+                    break
             except:
                 print("error at class Ai in method run")
                 raise
+        pl.EntityPlayer.realNext = pl.EntityPlayer.user
+
+    def run(self):
+
+        while True:
+            self.condition_choise.clear()
+            self.condition_choise.wait()
+
+            if pl.EntityPlayer.vsUser:
+                self.vsUser()
+            else:
+                self.vsAi()
 
 
 class Move:
@@ -80,7 +121,7 @@ class Move:
             y = list[i].y
             self.guiI.checked[x][y] = id
             self.guiI.memory.append([x, y])
-            att = self.heu.think(id, self.guiI)
+            att = self.heu.attack(point.Point(x, y), id, self.guiI)
             listResurt.append(Resurt(x, y, att))
             self.guiI.checked[x][y] = 0
             self.guiI.memory.pop()
@@ -102,13 +143,12 @@ class Move:
                 mx = listAi[0].score
             else:
                 mx = max(listAi[0].score, listUser[0].score)
-                print("mx = ", mx)
             if st.inRanger(0, pl.Score.line3 - 1, mx):
-                return 2
+                return 3
             elif st.inRanger(pl.Score.line3, pl.Score.line4, mx):
-                return 2
+                return 3
             else:
-                return 1
+                return 2
         else:
             return 0
 
