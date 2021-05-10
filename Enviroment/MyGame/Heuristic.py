@@ -1,480 +1,296 @@
-import Point as point
+import numpy as np
+
 import Gui
+import HeuristicAtPoint
 import Player as pl
+import Point as point
 
-arrAttack = [
-    [0, 0],
-    [1, 0],
-    [10, 30],
-    [1000, 300],
-    [100000, 100000],
-    [20000000, 20000000]
-]
 
-arrDefen = [0, 1, 20, 30, 40, 50]
+class Information:
+	numRight = 0
+	numDown = 0
+	numDownR = 0
+	numDownL = 0
+
+	def __init__(self, numRight, numDown, numDownR, numDownL):
+		self.numRight = numRight
+		self.numDown = numDown
+		self.numDownR = numDownR
+		self.numDownL = numDownL
+
+	def getNumberRight(self):
+		return self.numRight
+
+	def getNumberDown(self):
+		return self.numDown
+
+	def getNumberDownRight(self):
+		return self.numDownR
+
+	def getNumberDownLeft(self):
+		return self.numDownL
 
 
 class Experience:
 
-    def think(self, id, guiI):
-        sum = 0
-        sz = len(guiI.memory)
-        if sz > 0:
-            for i in range(sz):
-                x = guiI.memory[i][0]
-                y = guiI.memory[i][1]
-                if guiI.checked[x][y] == id:
-                    newPoint = point.Point(x, y)
-                    sum += self.attack(newPoint, id, guiI)
+	def think(self, id, guiI):
+		list = self.listWays(guiI, id)
 
-        return sum
+		sum = -1
+		for i in range(len(list)):
+			# print(list[i].getNumberRight() , list[i].getNumberDown() , list[i].getNumberDownRight() , list[i].getNumberDownLeft())
+			w = self.setUpArr(list[i])
+			sumObj = self.getSumArr(w)
+			if sumObj > sum:
+				sum = sumObj
+			if sum >= pl.Score.line5:
+				break
 
-    def getDefen(self, point, id, guiI):
-        defen = self.defen(point, id, guiI)
-        mx = defen - 6
-        if defen <= 5:
-            return arrDefen[defen]
-        else:
-            return arrDefen[5] + mx
+		sz = len(guiI.memory)
+		x = guiI.memory[sz - 1][0]
+		y = guiI.memory[sz - 1][1]
+		if guiI.checked[x][y] == id:
+			sumDefen = self.defen(point.Point(x, y), id, guiI)
+			# sum = max(sum, sumDefen)
+			sum += sumDefen
 
-    def defen(self, point, id, guiI):
-        x = point.x
-        y = point.y
+		return sum
 
-        # ngang
-        i, j = x, y
-        diff_ngang = 0
-        time = 4
-        while time > 4 and j >= 0:
-            if guiI.isDifferent(x, j):
-                diff_ngang += 1
-            if j - 1 < 0 or guiI.checked[x][j] == id:
-                break
-            j -= 1
-            time -= 1
+	def defen(self, newPoint, id, guiI):
+		defen = HeuristicAtPoint.Experience().getDefen(newPoint, id, guiI)
 
-        time = 4
-        i, j = x, y
-        while time > 4 and j < guiI.sizeCol:
-            if guiI.isDifferent(x, j):
-                diff_ngang += 1
-            if j + 1 >= guiI.sizeCol or guiI.checked[x][j] == id:
-                break
-            j += 1
-            time -= 1
+		for i in range(len(defen)):
+			if defen[i] > 5:
+				defen[i] = 5
+		w = self.setUpArrDefen(defen)
+		sumAtPoint = self.getSumArr(w, flag=False)
+		return sumAtPoint
 
-        # doc
-        i, j = x, y
-        diff_doc = 0
-        time = 4
-        while time > 0 and i >= 0:
-            if guiI.isDifferent(i, y, id):
-                diff_doc += 1
-            if i - 1 < 0 or guiI.checked[i][y] == id:
-                break
-            i -= 1
-            time -= 1
+	def listWays(self, guiI, id):
+		list = []
 
-        i, j = x, y
-        time = 4
-        while time > 0 and i < guiI.sizeRow:
-            if guiI.isDifferent(i, y, id):
-                diff_doc += 1
-            if i + 1 >= guiI.sizeRow or guiI.checked[i][y] == id:
-                break
-            i += 1
-            time -= 1
+		for i in range(len(guiI.memory)):
+			x = guiI.memory[i][0]
+			y = guiI.memory[i][1]
+			newPoint = point.Point(x, y)
+			if guiI.checked[x][y] == id:
+				right = self.getNumberRight(newPoint, guiI, id)
+				down = self.getNumberDown(newPoint, guiI, id)
+				downR = self.getNumberDownRight(newPoint, guiI, id)
+				downL = self.getNumberDownLeft(newPoint, guiI, id)
+				list.append(Information(right, down, downR, downL))
 
-        # dcc
-        i, j = x, y
-        diff_dcc = 0
-        time = 4
-        while time > 0 and i >= 0 and j >= 0:
-            if guiI.isDifferent(i, j, id):
-                diff_dcc += 1
-            if i - 1 < 0 or j - 1 < 0 or guiI.checked[i][j] == id:
-                break
-            i -= 1
-            j -= 1
-            time -= 1
+		return list
 
-        i, j = x, y
-        time = 4
-        while time > 0 and i < guiI.sizeRow and j < guiI.sizeCol:
-            if guiI.isDifferent(i, j, id):
-                diff_dcc += 1
-            if i + 1 >= guiI.sizeRow or j + 1 >= guiI.sizeCol or guiI.checked[i][j] == id:
-                break
-            i += 1
-            j += 1
-            time -= 1
+	def getSumArr(self, w, flag=True):
+		if flag:
+			return w[1] + w[2] * pl.Score.line2 + w[3] * pl.Score.line3 + w[4] * pl.Score.line4 + w[5] * pl.Score.line5
+		else:
+			return w[1] + w[2] * pl.Score.line2D + w[3] * pl.Score.line3D + w[4] * pl.Score.line4D + w[
+				5] * pl.Score.line5D
 
-        # dcp
-        i, j = x, y
-        diff_dcp = 0
-        time = 4
-        while time > 0 and i >= 0 and j < guiI.sizeCol:
-            if guiI.isDifferent(i, j, id):
-                diff_dcp += 1
-            if i - 1 < 0 or j + 1 >= guiI.sizeCol or guiI.checked[i][j] == id:
-                break
-            i -= 1
-            j += 1
-            time -= 1
+	def setUpArr(self, infor):
+		w = np.array([0, 0, 0, 0, 0, 0], dtype=int)
+		list = np.array(
+			[0, infor.getNumberRight(), infor.getNumberDown(), infor.getNumberDownRight(), infor.getNumberDownLeft()],
+			dtype=int)
+		for i in range(len(list)):
+			if list[i] == 0:
+				continue
+			else:
+				w[list[i]] = w[list[i]] + 1
+		return w
 
-        i, j = x, y
-        time = 4
-        while time > 0 and i < guiI.sizeRow and j >= 0:
-            if guiI.isDifferent(i, j, id):
-                diff_dcp += 1
-            if i + 1 >= guiI.sizeRow or j - 1 < 0 or guiI.checked[i][j] == id:
-                break
-            i += 1
-            j -= 1
-            time -= 1
+	def setUpArrDefen(self, list):
+		w = np.array([0, 0, 0, 0, 0, 0], dtype=int)
+		for i in range(len(list)):
+			if list[i] == 0:
+				continue
+			else:
+				w[list[i]] = w[list[i]] + 1
+		return w
 
-        return diff_ngang + diff_doc + diff_dcp + diff_dcc
+	def getNumberDownLeft(self, newPoint, guiI, id):
+		numDownL = 0
+		space = 0
+		x = newPoint.x
+		y = newPoint.y
+		end = -1
+		nextX = min(x + 4, guiI.sizeRow - 1)
+		nextY = max(y - 4, 0)
+		# find end in downL
+		i, j = x, y
+		while i <= nextX and j >= nextY:
+			if guiI.isDifferent(i, j, id):
+				end = i
+				break
+			if guiI.checked[i][j] == id:
+				numDownL += 1
+			else:
+				space += 1
+			i += 1
+			j -= 1
 
-    def attack(self, point, id, guiI):
-        listHorizal = self.getHorizal(point, id, guiI)
-        listVertical = self.getVertical(point, id, guiI)
-        listDiagonalMain = self.getDiagonalMain(point, id, guiI)
-        listDiagonalSecond = self.getDiagonalSecond(point, id, guiI)
-        sum = 0
+		# have 5 line
+		if end == -1 and numDownL + space == 5:
+			return numDownL
+		# no 5 line
+		# check up
+		i, j = x - 1, y + 1
+		canMove = False
+		add = 0
+		while i >= 0 and j < guiI.sizeRow:
+			if guiI.isDifferent(i, j, id):
+				break
+			add += 1
+			if numDownL + space + add == 5:
+				canMove = True
+				break
+			i -= 1
+			j += 1
+		if canMove:
+			return numDownL
+		else:
+			return 0
 
-        listAll = []
-        # print("ngang")
-        for i in range(len(listHorizal)):
-            # print(listHorizal[i].get_x(), " ", listHorizal[i].get_y())
-            listAll.append([listHorizal[i].get_x(), listHorizal[i].get_y()])
-        # print("doc")
-        for i in range(len(listVertical)):
-            # print(listVertical[i].get_x(), " ", listVertical[i].get_y())
-            listAll.append([listVertical[i].get_x(), listVertical[i].get_y()])
-        # print("dcc")
-        for i in range(len(listDiagonalMain)):
-            # print(listDiagonalMain[i].get_x(), " ", listDiagonalMain[i].get_y())
-            listAll.append([listDiagonalMain[i].get_x(), listDiagonalMain[i].get_y()])
-        # print("dcp")
-        for i in range(len(listDiagonalSecond)):
-            # print(listDiagonalSecond[i].get_x(), " ", listDiagonalSecond[i].get_y())
-            listAll.append([listDiagonalSecond[i].get_x(), listDiagonalSecond[i].get_y()])
+	def getNumberDownRight(self, newPoint, guiI, id):
+		numDownR = 0
+		space = 0
+		x = newPoint.x
+		y = newPoint.y
+		end = -1
+		nextX = min(x + 4, guiI.sizeRow - 1)
+		nextY = min(y + 4, guiI.sizeCol - 1)
+		# find end in downR
+		i, j = x, y
+		while i <= nextX and j <= nextY:
+			if guiI.isDifferent(i, j, id):
+				end = i
+				break
+			if guiI.checked[i][j] == id:
+				numDownR += 1
+			else:
+				space += 1
+			i += 1
+			j += 1
 
-        for i in range(len(listAll)):
-            xx = listAll[i][0]
-            yy = listAll[i][1]
-            sum += arrAttack[xx][yy]
+		# have 5 line
+		if end == -1 and numDownR + space == 5:
+			return numDownR
+		# no 5 line
+		# check up
+		i, j = x - 1, y - 1
+		canMove = False
+		add = 0
+		while i >= 0 and j >= 0:
+			if guiI.isDifferent(i, j, id):
+				break
+			add += 1
+			if numDownR + space + add == 5:
+				canMove = True
+				break
+			i -= 1
+			j -= 1
+		if canMove:
+			return numDownR
+		else:
+			return 0
 
-        return sum
+	def getNumberDown(self, newPoint, guiI, id):
+		numDown = 0
+		space = 0
+		x = newPoint.x
+		y = newPoint.y
+		end = -1
+		next = min(x + 4, guiI.sizeRow - 1)
+		# find end in down
+		for i in range(x, next + 1):
+			if guiI.isDifferent(i, y, id):
+				end = i
+				break
+			elif guiI.checked[i][y] == id:
+				numDown += 1
+			else:
+				space += 1
+		# have 5 line
+		if end == -1 and numDown + space == 5:
+			return numDown
+		# no 5 line
+		# check left
+		i = x - 1
+		canMove = False
+		add = 0
+		while i >= 0:
+			if guiI.isDifferent(i, y, id):
+				break
+			add += 1
+			if space + numDown + add == 5:
+				canMove = True
+				break
+			i -= 1
+		if canMove:
+			return numDown
+		else:
+			return 0
 
-    def getHorizal(self, point, id, guiI):
-        list = []
-        x = point.get_x()
-        y = point.get_y()
-        bg = max(0, y - 4)
-        i = y
-        while i >= bg:
-            if guiI.isDifferent(x, i, id):
-                bg = i + 1
-                break
-            if i - 1 < bg: break;
-            i -= 1
-
-        en = min(guiI.sizeCol - 1, y + 4)
-        i = y
-        while i <= en:
-            if guiI.isDifferent(x, i, id):
-                en = i - 1
-                break
-            if i + 1 > en:  break
-            i += 1
-        if en - bg + 1 >= 5:
-            for i in range(bg, y + 1):
-                mx = 0
-                self.setup()
-                en2 = min(i + 4, guiI.sizeCol - 1)
-                for k in range(i, en2 + 1):
-                    if guiI.isDifferent(x, k, id):
-                        en2 = k - 1
-                        break
-                if en2 > en: break
-                for j in range(i, en2 + 1):
-                    if guiI.checked[x][j] == id:
-                        mx += 1
-                        if self.checkIndexZero2_1 == -1:
-                            self.checkIndexZero3_1 = j
-                        else:
-                            self.checkIndexZero2_2 = j
-                    else:
-                        self.checkIndexZero4 = j
-                        if self.checkIndexZero3_1 == -1:
-                            self.checkIndexZero3_1 = j
-                        else:
-                            self.checkIndexZero3_2 = j
-                list.append(self.case(mx, i, en2))
-
-        return list
-
-    def getVertical(self, point, id, guiI):
-        list = []
-        x = point.get_x()
-        y = point.get_y()
-        bg = max(0, x - 4)
-
-        i = x
-        while i >= bg:
-            if guiI.isDifferent(i, y, id):
-                bg = i + 1
-                break
-            if i - 1 < bg: break
-            i -= 1
-
-        en = min(guiI.sizeRow - 1, x + 4)
-        i = x
-        while i <= en:
-            if guiI.isDifferent(i, y, id):
-                en = i - 1
-                break
-            if i + 1 > en: break
-            i += 1
-
-        if en - bg + 1 >= 5:
-            for i in range(bg, x + 1):
-                mx = 0
-                self.setup()
-
-                en2 = min(guiI.sizeRow - 1, i + 4)
-                for k in range(i, en2 + 1):
-                    if guiI.isDifferent(k, y, id):
-                        en2 = k - 1
-                        break
-
-                if en2 > en: break
-                # print(" x = ", i, "y = ", y , " enx = " , en2 , " eny = " , y)
-                for j in range(i, en2 + 1):
-                    if guiI.checked[j][y] == id:
-                        mx += 1
-                        if self.checkIndexZero2_1 == -1:
-                            self.checkIndexZero2_1 = j
-                        else:
-                            self.checkIndexZero2_2 = j
-                    else:
-                        self.checkIndexZero4 = j
-                        if self.checkIndexZero3_1 == -1:
-                            self.checkIndexZero3_1 = j
-                        else:
-                            self.checkIndexZero3_2 = j
-                list.append(self.case(mx, i, en2))
-        return list
-
-    def getDiagonalMain(self, point, id, guiI):
-        list = []
-        x = point.get_x()
-        y = point.get_y()
-
-        beg_x = x
-        beg_y = y
-        time = 4
-        # 96->
-        while time > 0 and beg_x >= 0 and beg_y >= 0:
-            if guiI.isDifferent(beg_x, beg_y, id):
-                beg_x += 1
-                beg_y += 1
-                break
-            if beg_x - 1 < 0 or beg_y - 1 < 0: break
-            beg_x -= 1
-            beg_y -= 1
-            time -= 1
-
-        end_x = x
-        end_y = y
-        time = 4
-
-        while time > 0 and end_x < guiI.sizeRow and end_y < guiI.sizeCol:
-            if guiI.isDifferent(end_x, end_y, id):
-                end_x -= 1
-                end_y -= 1
-                break
-            if end_x + 1 >= guiI.sizeRow or end_y + 1 >= guiI.sizeCol:
-                break
-            end_x += 1
-            end_y += 1
-            time -= 1
-
-        if end_x - beg_x + 1 >= 5:
-            i = beg_x
-            j = beg_y
-            while i <= x and j <= y:
-                self.setup()
-                mx = 0
-                end_x1 = i
-                end_y1 = j
-                time = 4
-                while time > 0 and end_x1 < guiI.sizeRow and end_y1 < guiI.sizeCol:
-                    if guiI.isDifferent(end_x1, end_y1, id):
-                        end_x1 -= 1
-                        end_y1 -= 1
-                        break
-                    if end_x1 + 1 >= guiI.sizeRow or end_y1 + 1 >= guiI.sizeCol: break
-                    end_x1 += 1
-                    end_y1 += 1
-                    time -= 1
-                if end_x1 > end_x: break
-                i1 = i
-                i2 = j
-                while i1 <= end_x1 and i2 <= end_y1:
-                    if guiI.checked[i1][i2] == id:
-                        mx += 1
-                        if self.checkIndexZero2_1 == -1:
-                            self.checkIndexZero2_1 = i2
-                        else:
-                            self.checkIndexZero2_2 = i2
-                    else:
-                        self.checkIndexZero4 = i2
-                        if self.checkIndexZero3_1 == -1:
-                            self.checkIndexZero3_1 = i2
-                        else:
-                            self.checkIndexZero3_2 = i2
-                    i1 += 1
-                    i2 += 1
-                list.append(self.case(mx, j, end_y1))
-                i += 1
-                j += 1
-
-        return list
-
-    def getDiagonalSecond(self, point, id, guiI):
-        list = []
-        x = point.get_x()
-        y = point.get_y()
-
-        beg_x = x
-        beg_y = y
-        time = 4
-
-        while time > 0 and beg_x >= 0 and beg_y < guiI.sizeCol:
-            if guiI.isDifferent(beg_x, beg_y, id):
-                beg_x += 1
-                beg_y -= 1
-                break
-            if beg_x - 1 < 0 or beg_y + 1 >= guiI.sizeCol: break
-            beg_x -= 1
-            beg_y += 1
-            time -= 1
-
-        end_x = x
-        end_y = y
-        time = 4
-
-        while time > 0 and end_x < guiI.sizeRow and end_y >= 0:
-            if guiI.isDifferent(end_x, end_y, id):
-                end_x -= 1
-                end_y += 1
-                break
-            if end_x + 1 >= guiI.sizeRow or end_y - 1 < 0:
-                break
-            end_x += 1
-            end_y -= 1
-            time -= 1
-        if end_x - beg_x + 1 >= 5:
-            i = beg_x
-            j = beg_y
-            while i <= x and j >= y:
-                self.setup()
-                mx = 0
-                end_x1 = i
-                end_y1 = j
-                time = 4
-                while time > 0 and end_x1 < guiI.sizeRow and end_y1 >= 0:
-                    if guiI.isDifferent(end_x1, end_y1, id):
-                        end_x1 -= 1
-                        end_y1 += 1
-                        break
-                    if end_x1 + 1 >= guiI.sizeRow or end_y1 - 1 < 0:
-                        break
-                    end_x1 += 1
-                    end_y1 -= 1
-                    time -= 1
-                if end_x1 > end_x: break
-                i1 = i
-                i2 = j
-                while i1 <= end_x1 and i2 >= end_y1:
-                    if guiI.checked[i1][i2] == id:
-                        mx += 1
-                        if self.checkIndexZero2_1 == -1:
-                            self.checkIndexZero3_1 = i2
-                        else:
-                            self.checkIndexZero2_2 = i2
-                    else:
-                        self.checkIndexZero4 = i2
-                        if self.checkIndexZero3_1 == -1:
-                            self.checkIndexZero3_1 = i2
-                        else:
-                            self.checkIndexZero3_2 = i2
-                    i1 += 1
-                    i2 -= 1
-                list.append(self.case(mx, j, end_y1))
-                i += 1
-                j -= 1
-
-        return list
-
-    def case(self, mx, bg, en):
-        if mx == 5:
-            return point.Point(mx, 0)
-        elif mx == 4:
-            return point.Point(mx, self.checkFour(bg, en))
-        elif mx == 3:
-            return point.Point(mx, self.checkThree(bg, en))
-        elif mx == 2:
-            return point.Point(mx, self.checkTwo())
-        elif mx == 1:
-            return point.Point(1, 0)
-        else:
-            return point.Point(0, 0)
-
-    def checkFour(self, bg, en):
-        if self.checkIndexZero4 == bg or self.checkIndexZero4 == en:
-            return 0
-        return 1
-
-    def checkThree(self, bg, en):
-        # print(self.checkIndexZero3_1, " ", self.checkIndexZero3_2)
-        # print(bg, " ", en)
-        # check sai roi
-        if self.checkIndexZero3_1 == bg and self.checkIndexZero3_2 == en:
-            return 0
-        if abs(self.checkIndexZero3_1 - self.checkIndexZero3_2) == 1:
-            if self.checkIndexZero3_1 == bg or self.checkIndexZero3_2 == en:
-                return 0
-        return 1
-
-    def checkTwo(self):
-        if abs(self.checkIndexZero2_1 - self.checkIndexZero2_2) == 1:
-            return 0
-        return 1
-
-    def setup(self):
-        self.checkIndexZero4 = -1
-        self.checkIndexZero3_1 = -1
-        self.checkIndexZero3_2 = -1
-        self.checkIndexZero2_1 = -1
-        self.checkIndexZero2_2 = -1
+	def getNumberRight(self, newPoint, guiI, id):
+		numRight = 0
+		space = 0
+		x = newPoint.x
+		y = newPoint.y
+		end = -1
+		next = min(y + 4, guiI.sizeCol - 1)
+		# find end in right
+		for i in range(y, next + 1):
+			if guiI.isDifferent(x, i, id):
+				end = i
+				break
+			elif guiI.checked[x][i] == id:
+				numRight += 1
+			else:
+				space += 1
+		# have 5 line
+		if end == -1 and numRight + space == 5:
+			return numRight
+		# no 5 line
+		# check left
+		i = y - 1
+		canMove = False
+		add = 0
+		while i >= 0:
+			if guiI.isDifferent(x, i, id):
+				break
+			add += 1
+			if space + numRight + add == 5:
+				canMove = True
+				break
+			i -= 1
+		if canMove:
+			return numRight
+		else:
+			return 0
 
 
 def main():
-    ex = Experience()
-    guiI = Gui.GuiInterface()
-    guiI.checked[0][7] = 1
-    guiI.checked[1][7] = 0
-    guiI.checked[2][7] = 1
-    guiI.checked[3][7] = 1
-    guiI.checked[4][7] = 0
-    guiI.checked[1][8] = 1
-    guiI.checked[2][9] = 0
-    guiI.checked[3][10] = 1
-    print(ex.attack(point.Point(0, 7), 1, guiI))
+	ex = Experience()
+	guiI = Gui.GuiInterface()
+	guiI.checked[6][6] = 1
+	guiI.checked[7][5] = 1
+	guiI.checked[8][4] = 1
+	guiI.checked[9][3] = 1
+	guiI.checked[5][6] = 1
+	guiI.checked[5][8] = 1
+
+
+	guiI.memory.append([5, 7])
+
+	print(guiI.checked)
+
+	# guiI.checked[1][8] = 1
+	# guiI.checked[2][9] = 0
+	# guiI.checked[3][10] = 1
+	print(ex.defen(point.Point(5 , 7) , 2 , guiI))
 
 
 if __name__ == '__main__':
-    main()
+	main()

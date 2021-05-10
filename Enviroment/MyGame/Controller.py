@@ -5,7 +5,6 @@ from tkinter import messagebox
 import Player as pl
 import State as st
 import numpy as np
-import Ai as ai
 
 
 class Event(threading.Thread):
@@ -62,7 +61,7 @@ class Event(threading.Thread):
             while len(guiI.memory) > 0:
                 self.off(guiI)
             self.setAiWin()
-            time.sleep(0.5)
+            time.sleep(0.1)
             self.resetAi()
             guiI.checked = np.zeros((guiI.sizeRow, guiI.sizeCol))
             pl.EntityPlayer.win = False

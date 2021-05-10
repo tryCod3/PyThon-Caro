@@ -26,8 +26,8 @@ def listCanGo(guiI):
     for i in range(sz):
         x = guiI.memory[i][0]
         y = guiI.memory[i][1]
-        for q in range(-1, 2):
-            for e in range(-1, 2):
+        for q in range(-2, 3):
+            for e in range(-2, 3):
                 xx = x + q
                 yy = y + e
                 if isInBoard(xx, yy, guiI) and guiI.checked[xx][yy] == 0 and checked[xx][yy] == 0:
