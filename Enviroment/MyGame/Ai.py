@@ -145,8 +145,6 @@ class Move:
 		listAi = self.sortList(list, pl.EntityPlayer.ai, "think")
 		listUser = self.sortList(list, pl.EntityPlayer.user, "think")
 
-
-
 		mx = 0
 		if len(listAi) > 0 or len(listUser) > 0:
 			if len(listAi) == 0:
@@ -157,16 +155,17 @@ class Move:
 				mx = max(listAi[0].score, listUser[0].score)
 
 			if mx >= pl.Score.line5:
+				return 1
+			elif mx >= pl.Score.line3:
 				return 2
-			else:
-				return 3
+			return 3
 
 		else:
 			return 0
 
 	def minimaxAlphaBeta(self, depth, alpha, beta, isAi):
-		isWinAi = self.heu.think(pl.EntityPlayer.ai, self.guiI)
-		isWinUser = self.heu.think(pl.EntityPlayer.user, self.guiI)
+		isWinAi = self.HeuAtPoint.think(pl.EntityPlayer.ai, self.guiI)
+		isWinUser = self.HeuAtPoint.think(pl.EntityPlayer.user, self.guiI)
 
 		isFull = st.isFullBoard(self.guiI)
 		isDethpZero = depth

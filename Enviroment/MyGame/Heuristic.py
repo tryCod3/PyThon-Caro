@@ -49,10 +49,10 @@ class Experience:
 		sz = len(guiI.memory)
 		x = guiI.memory[sz - 1][0]
 		y = guiI.memory[sz - 1][1]
-		if guiI.checked[x][y] == id:
-			sumDefen = self.defen(point.Point(x, y), id, guiI)
+		# if guiI.checked[x][y] == id:
+			# sumDefen = self.defen(point.Point(x, y), id, guiI)
 			# sum = max(sum, sumDefen)
-			sum += sumDefen
+			# sum += sumDefen
 
 		return sum
 
@@ -62,7 +62,26 @@ class Experience:
 		for i in range(len(defen)):
 			if defen[i] > 5:
 				defen[i] = 5
+
 		w = self.setUpArrDefen(defen)
+
+		i = 4
+		while i >= 1:
+			j = i
+			while j >= 1:
+				if i == j:
+					if w[i] >= 2:
+						w[i + 1] += 1
+						w[i] = 0
+				else:
+					if w[i] >= 1 and w[j] >= 1: # i > j
+						w[i + 1] += 1
+						w[i] = 0
+						w[j + 1] += 1
+						w[j] = 0
+				j -= 1
+			i -= 1
+
 		sumAtPoint = self.getSumArr(w, flag=False)
 		return sumAtPoint
 

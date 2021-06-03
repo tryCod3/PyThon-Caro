@@ -17,3 +17,6 @@ class Score:
 	line4D = 1e5 // 2 + 1
 	line3D = 1e3 // 2 + 1
 	line2D = 1e1 // 2 + 1
+	# line4D = 10000
+	# line3D = 1000
+	# line2D = 10

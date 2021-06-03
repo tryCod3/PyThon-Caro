@@ -2,6 +2,7 @@ import numpy as np
 
 import Point as point
 from Enviroment.MyGame import Gui
+import Player as pl
 
 arrAttack = [
     [0, 0],
@@ -12,7 +13,7 @@ arrAttack = [
     [10000000, 10000000]
 ]
 
-arrDefen = [0, 1, 20, 30, 40, 50]
+arrDefen = [0, 100, 1000, 15000, 100000, 150000]
 
 
 class Experience:
@@ -28,17 +29,69 @@ class Experience:
                     newPoint = point.Point(x, y)
                     sum += self.attack(newPoint, id, guiI)
 
+            sz = len(guiI.memory)
+            x = guiI.memory[sz - 1][0]
+            y = guiI.memory[sz - 1][1]
+            if guiI.checked[x][y] == id:
+                if id == pl.EntityPlayer.ai:
+                    id = pl.EntityPlayer.user
+                else:
+                    id = pl.EntityPlayer.ai
+                sumDefen = self.defen(point.Point(x, y), id, guiI)
+                sum += sumDefen
+
         return sum
+
+    def setUpArrDefen(self, list):
+        w = np.array([0, 0, 0, 0, 0, 0], dtype=int)
+        for i in range(len(list)):
+            if list[i] == 0:
+                continue
+            else:
+                w[list[i]] = w[list[i]] + 1
+        return w
+
+    def defen(self, newPoint, id, guiI):
+        defen = self.getDefen(newPoint, id, guiI)
+
+        for i in range(len(defen)):
+            if defen[i] > 5:
+                defen[i] = 5
+
+        w = self.setUpArrDefen(defen)
+
+        i = 4
+        while i >= 1:
+            j = i
+            while j >= 1:
+                if i == j:
+                    if w[i] >= 2:
+                        w[i + 1] += 1
+                        w[i] = 0
+                else:
+                    if w[i] >= 1 and w[j] >= 1:  # i > j
+                        w[i + 1] += 1
+                        w[i] = 0
+                        w[j + 1] += 1
+                        w[j] = 0
+                j -= 1
+            i -= 1
+        sumAtPoint = 0
+        for i in range(1 , 6):
+            if w[i] > 0:
+                sumAtPoint += arrDefen[i]
+        return sumAtPoint
 
     def getDefen(self, point, id, guiI):
         x = point.x
         y = point.y
+
         # ngang
         i, j = x, y
         diff_ngang = 0
         time = 4
         while time > 0 and j >= 0:
-            if guiI.isDifferent(x, j, id):
+            if guiI.isDifferent(x, j , id):
                 diff_ngang += 1
             if j - 1 < 0 or guiI.checked[x][j] == id:
                 break
@@ -60,9 +113,9 @@ class Experience:
         diff_doc = 0
         time = 4
         while time > 0 and i >= 0:
-            if guiI.isDifferent(i, y, id):
+            if guiI.isDifferent(i, y, id) :
                 diff_doc += 1
-            if i - 1 < 0 or guiI.checked[i][y] == id:
+            if i - 1 < 0 or guiI.checked[i][y] == id :
                 break
             i -= 1
             time -= 1
@@ -72,7 +125,7 @@ class Experience:
         while time > 0 and i < guiI.sizeRow:
             if guiI.isDifferent(i, y, id):
                 diff_doc += 1
-            if i + 1 >= guiI.sizeRow or guiI.checked[i][y] == id:
+            if i + 1 >= guiI.sizeRow or  guiI.checked[i][y] == id :
                 break
             i += 1
             time -= 1
@@ -82,7 +135,7 @@ class Experience:
         diff_dcc = 0
         time = 4
         while time > 0 and i >= 0 and j >= 0:
-            if guiI.isDifferent(i, j, id):
+            if  guiI.isDifferent(i, j, id):
                 diff_dcc += 1
             if i - 1 < 0 or j - 1 < 0 or guiI.checked[i][j] == id:
                 break
@@ -95,7 +148,7 @@ class Experience:
         while time > 0 and i < guiI.sizeRow and j < guiI.sizeCol:
             if guiI.isDifferent(i, j, id):
                 diff_dcc += 1
-            if i + 1 >= guiI.sizeRow or j + 1 >= guiI.sizeCol or guiI.checked[i][j] == id:
+            if i + 1 >= guiI.sizeRow or j + 1 >= guiI.sizeCol or guiI.checked[i][j] == id :
                 break
             i += 1
             j += 1
@@ -106,9 +159,9 @@ class Experience:
         diff_dcp = 0
         time = 4
         while time > 0 and i >= 0 and j < guiI.sizeCol:
-            if guiI.isDifferent(i, j, id):
+            if guiI.isDifferent(i, j, id) :
                 diff_dcp += 1
-            if i - 1 < 0 or j + 1 >= guiI.sizeCol or guiI.checked[i][j] == id:
+            if i - 1 < 0 or j + 1 >= guiI.sizeCol or  guiI.checked[i][j] == id:
                 break
             i -= 1
             j += 1
@@ -117,7 +170,7 @@ class Experience:
         i, j = x, y
         time = 4
         while time > 0 and i < guiI.sizeRow and j >= 0:
-            if guiI.isDifferent(i, j, id):
+            if guiI.isDifferent(i, j, id) :
                 diff_dcp += 1
             if i + 1 >= guiI.sizeRow or j - 1 < 0 or guiI.checked[i][j] == id:
                 break
@@ -126,13 +179,9 @@ class Experience:
             time -= 1
 
         list = np.array(
-            [diff_ngang, diff_doc, diff_dcp, diff_dcc],
+            [ diff_ngang , diff_doc , diff_dcp , diff_dcc ],
             dtype=int)
 
-        # print("diff_ngang = ", diff_ngang)
-        # print("diff_doc = ", diff_doc)
-        # print("diff_dcp = ", diff_dcp)
-        # print("diff_dcc = ", diff_dcc)
 
         return list
 
@@ -466,18 +515,18 @@ class Experience:
 if __name__ == '__main__':
     ex = Experience()
     guiI = Gui.GuiInterface()
-    guiI.checked[6][7] = 1
-    guiI.checked[7][8] = 1
-    guiI.checked[8][9] = 1
-    guiI.checked[9][10] = 1
-    guiI.checked[10][11] = 1
-    guiI.checked[11][12] = 2
+    guiI.checked[4][7] = 1
+    guiI.checked[4][6] = 1
+    guiI.checked[6][4] = 1
+    guiI.checked[7][4] = 1
 
-    guiI.memory.append([6, 6])
 
-    # print(guiI.checked)
+
+    # guiI.memory.append([6, 6])
+
+    print(guiI.checked)
 
     # guiI.checked[1][8] = 1
     # guiI.checked[2][9] = 0
     # guiI.checked[3][10] = 1
-    print(ex.attack(point.Point(6, 11), 1, guiI))
+    print(ex.defen(point.Point(4 , 4) , 1 , guiI))
