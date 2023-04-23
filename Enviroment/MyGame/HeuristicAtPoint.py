@@ -1,7 +1,7 @@
 import numpy as np
 
 import Point as point
-from Enviroment.MyGame import Gui
+import Gui
 import Player as pl
 
 arrAttack = [
